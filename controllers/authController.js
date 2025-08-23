@@ -3,14 +3,14 @@ const { usuarioRegistroSchema, usuarioLoginSchema, validarID } = require('../uti
 const { ApiError } = require("../utils/errorHandler");
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
-const { number } = require('zod');
+const { z } = require('zod');
 
 async function register(req, res, next) {
     try{
         const dados = usuarioRegistroSchema.parse(req.body);
 
         if(await usuarioRepository.encontrarUsuarioPorEmail(dados.email)){            
-            next(new ApiError(400, "Esse email já está em uso."));
+            throw next(new ApiError(400, "Esse email já está em uso."));
         }             
 
         const senhaHash = await bcrypt.hash(dados.senha, 10);
@@ -18,13 +18,15 @@ async function register(req, res, next) {
         const user = await usuarioRepository.cadastrarUsuario(dadosUsuario);
 
         if(!user){
-            next(new ApiError(404, "Usuário não foi encontrado."));
+            throw next(new ApiError(404, "Usuário não foi encontrado."));
         }
         
         res.status(201).json(user);
     } catch(error) {
+        if (error instanceof z.ZodError) {
+            throw next(new ApiError(400, "Parâmetros inválidos"))
+        }
         next(error);
-        
     }
 }
 
@@ -35,13 +37,13 @@ async function login(req, res, next) {
         const user = await usuarioRepository.encontrarUsuarioPorEmail(dados.email);
 
         if(!user){
-            next(new ApiError(404, "Usuário não foi encontrado."));
+            throw next(new ApiError(404, "Usuário não foi encontrado."));
         }
 
         const isSenhaValida = await bcrypt.compare(dados.senha, user.senha);
 
         if(!isSenhaValida){
-            next(new ApiError(401, "Senha errada."));
+            throw next(new ApiError(401, "Senha errada."));
         }
 
         const acess_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET, {
@@ -58,6 +60,9 @@ async function login(req, res, next) {
 
         res.status(200).json({acess_token});        
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            throw next(new ApiError(400, "Parâmetros inválidos"))
+        }
         next(error);
     }
 }
@@ -80,11 +85,14 @@ async function deletar(req, res, next) {
         const status = await usuarioRepository.deletarUsuario(id);
 
         if(!status){
-            next(new ApiError(404, "Usuário não foi encontrado."));
+            throw next(new ApiError(404, "Usuário não foi encontrado."));
         }
 
         res.status(204).send();
     } catch (error) {
+        if (error instanceof z.ZodError) {
+            throw next(new ApiError(400, "Parâmetros inválidos"))
+        }
         next(error);
     }
 }
@@ -93,7 +101,7 @@ async function getDados(req, res, next) {
     const user = req.user;
 
     if(!user) {
-        next(new ApiError(404, "Usuário não foi encontrado."));
+        throw next(new ApiError(404, "Usuário não foi encontrado."));
     }
 
     const dados = { nome: user.nome, email: user.email };

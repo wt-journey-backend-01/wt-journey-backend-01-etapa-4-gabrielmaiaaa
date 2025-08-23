@@ -7,12 +7,12 @@ function authMiddleware(req, res, next) {
     const token = tokenHeader && tokenHeader.split(" ")[1];
 
     if(!token){
-        next(new ApiError(404, "Token errado."));
+        return next(new ApiError(401, "Token errado."));
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (error, user) => {
         if(error){
-            next(new ApiError(404, "Chave Secreta diferente."));
+            return next(new ApiError(401, "Chave Secreta diferente."));
         }
         
         req.user = user;
