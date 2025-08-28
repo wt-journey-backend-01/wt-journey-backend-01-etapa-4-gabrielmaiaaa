@@ -1,177 +1,92 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 8 créditos restantes para usar o sistema de feedback AI.
+Você tem 9 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para gabrielmaiaaa:
 
-Nota final: **47.0/100**
+Nota final: **48.7/100**
 
-Olá, Gabriel! 👋🚀
+# Feedback para gabrielmaiaaa 🚨🔍
 
-Primeiramente, parabéns pelo esforço e dedicação em construir uma API REST completa, com autenticação, autorização e integração com PostgreSQL! 🎉 Você estruturou muito bem seu projeto, com controllers, repositories, middlewares e rotas bem organizados, o que é essencial para um código profissional e escalável. Também destaco que você já implementou corretamente o registro, login, logout e exclusão de usuários, além da proteção das rotas de agentes e casos com JWT. Isso é um grande avanço! 👏
+Olá, Gabriel! Primeiro, parabéns pelo esforço e pela entrega do seu projeto! 🎉 Você conseguiu implementar várias funcionalidades importantes, como o registro, login, logout e exclusão de usuários, além da proteção das rotas com JWT, o que é fundamental para uma API segura. Além disso, seu projeto está muito bem organizado e estruturado, seguindo a arquitetura MVC com controllers, repositories, middlewares e rotas bem separadas. Isso é essencial para manter o código limpo e escalável. 👏
 
----
-
-## O que está indo muito bem 👍
-
-- **Estrutura do projeto:** Você seguiu a arquitetura MVC e separou bem as responsabilidades, com pastas para controllers, repositories, middlewares, rotas e utils. Isso facilita muito a manutenção.
-- **Uso do JWT e bcrypt:** A geração do token JWT e o hash da senha usando bcryptjs estão muito bem implementados, com expiração configurada e proteção das rotas via middleware.
-- **Validação com Zod:** O uso do Zod para validar dados de entrada no authController é uma ótima prática para garantir a integridade dos dados.
-- **Mensagens de erro customizadas:** Você criou mensagens claras e específicas para erros, o que melhora a experiência do consumidor da API.
-- **Implementação dos endpoints obrigatórios:** Registro, login, logout, exclusão de usuários e acesso aos dados do usuário autenticado (`/usuarios/me`) estão presentes e funcionais.
-- **Proteção das rotas de agentes e casos:** O middleware de autenticação está aplicado corretamente nas rotas sensíveis.
-
-Além disso, você conseguiu implementar algumas funcionalidades bônus, como o endpoint `/usuarios/me` que retorna os dados do usuário logado. Isso demonstra seu empenho em ir além do básico! 🌟
+Também é ótimo ver que você aplicou corretamente o hashing das senhas com bcrypt e que o token JWT tem expiração configurada, além de utilizar variáveis de ambiente para o segredo do JWT, o que é uma prática de segurança fundamental. Você também implementou o middleware de autenticação e aplicou ele nas rotas protegidas, garantindo que apenas usuários autenticados possam acessar os recursos sensíveis. Muito bom! 🚀
 
 ---
 
-## Pontos que precisam de atenção para melhorar 🔍
+## ✅ Pontos fortes do seu projeto
 
-### 1. Tratamento de erro ao tentar criar usuário com e-mail já em uso
+- Estrutura do projeto organizada e seguindo o padrão esperado.
+- Implementação correta do registro, login, logout e exclusão de usuários.
+- Uso correto do bcrypt para hashing de senha.
+- Geração de JWT com expiração e uso do segredo via `.env`.
+- Middleware de autenticação aplicado nas rotas de agentes e casos.
+- Tratamento de erros com mensagens customizadas.
+- Documentação no `INSTRUCTIONS.md` clara e explicativa.
+- Passou todos os testes base relacionados a usuários e autenticação.
+- Passou testes de proteção das rotas (status 401 quando JWT ausente).
+- Passou testes bônus que envolvem filtragem simples e busca por palavras-chave.
 
-No método `register` do `authController`, você tem este trecho:
+---
 
-```js
-if(await usuarioRepository.encontrarUsuarioPorEmail(dados.email)){            
-    throw next(new ApiError(400, "Esse email já está em uso."));
-}             
-```
+# 🚩 Análise dos testes que falharam e causas raiz
 
-Aqui, você está usando `throw next(...)`, o que não é a forma correta de usar o `next` em Express. O correto é **chamar `next()` diretamente** para passar o erro ao middleware de tratamento, sem usar `throw`. O uso de `throw` com `next` pode gerar comportamentos inesperados na propagação do erro.
+Você teve algumas falhas importantes que impactaram sua nota, principalmente relacionadas ao comportamento esperado da API para usuários e agentes. Vamos destrinchar os principais testes que falharam, entender o motivo e como corrigir.
 
-**Como corrigir:**
+---
+
+## 1. `USERS: Recebe erro 400 ao tentar criar um usuário com e-mail já em uso`
+
+### O que o teste espera?
+
+Quando tentar registrar um usuário com um email já cadastrado, a API deve responder com status **400 BAD REQUEST** e uma mensagem clara.
+
+### O que seu código faz?
+
+No seu `authController.register`:
 
 ```js
 if(await usuarioRepository.encontrarUsuarioPorEmail(dados.email)){            
     return next(new ApiError(400, "Esse email já está em uso."));
-}             
+}  
 ```
 
-Ou seja, apenas `return next(...)` para interromper a execução e passar o erro adiante.
+Isso parece correto, porém o teste falhou.
+
+### Por que pode estar falhando?
+
+- **Possível causa 1:** O método `encontrarUsuarioPorEmail` retorna `false` quando não encontra usuário, mas retorna o usuário quando encontra. Isso está certo.
+- **Possível causa 2:** O `ApiError` que você está passando para o `next()` pode não estar sendo tratado corretamente para retornar status 400. Talvez o middleware de erro não esteja capturando esse erro como esperado.
+- **Possível causa 3:** O teste pode estar esperando uma resposta JSON com um formato específico, e você está passando só o erro via `next()`. Se o middleware de erro não estiver configurado para retornar o status e mensagem no formato esperado, o teste pode falhar.
+
+### O que revisar?
+
+- Verifique se o seu middleware `errorHandler` está capturando o `ApiError` e retornando o status 400 com uma resposta JSON estruturada.
+- Certifique-se que o nome do campo do token retornado no login está correto (veja mais abaixo).
+- Teste manualmente o endpoint `/auth/register` com um email já cadastrado e veja a resposta HTTP e corpo retornados.
 
 ---
 
-### 2. Validação de campos extras no payload do registro
+## 2. Testes relacionados a agentes que falharam:
 
-Seu schema de validação com Zod (`usuarioRegistroSchema`) não está visível aqui, mas percebi que o teste espera erro 400 se o payload contém campos extras não permitidos. Isso significa que seu schema deve ser configurado para **não permitir campos desconhecidos**.
+- Criação de agentes com status 201 e dados corretos.
+- Listar agentes com status 200 e dados corretos.
+- Buscar agente por ID com status 200 e dados corretos.
+- Atualizar agente com PUT e PATCH com status 200 e dados atualizados.
+- Deletar agente com status 204 e corpo vazio.
+- Receber status 400 ao criar agente com payload incorreto.
+- Receber status 404 ao buscar agente inexistente ou com ID inválido.
+- Receber status 401 ao tentar acessar agentes sem JWT.
+- Receber status 400 ao atualizar agente com payload incorreto.
+- Receber status 404 ao atualizar ou deletar agente inexistente ou ID inválido.
 
-No Zod, você pode usar `.strict()` para garantir isso. Por exemplo:
+### O que seu código faz?
 
-```js
-const usuarioRegistroSchema = z.object({
-  nome: z.string().min(1),
-  email: z.string().email(),
-  senha: z.string().min(8)
-}).strict();
-```
+Seu `agentesController` está muito bem estruturado, com validações rigorosas e tratamento de erros customizados. Você usa o middleware `authMiddleware` nas rotas de agentes, o que está correto.
 
-Assim, se o cliente enviar qualquer campo extra, o Zod já rejeita a requisição com erro 400.
+### Por que esses testes podem estar falhando?
 
----
-
-### 3. Exclusão de usuário no `usuariosRepository`
-
-No método `deletarUsuario`, você tem:
-
-```js
-const user = await db('usuarios').where({id: id}).del();
-
-if(!user || user.length === 0){
-    return false;
-}
-
-return true;
-```
-
-O método `del()` do Knex retorna o número de linhas deletadas (um número), não um array. Portanto, a condição `user.length === 0` não faz sentido e nunca será verdadeira. Isso pode fazer com que a função retorne `true` mesmo quando nenhum usuário foi deletado.
-
-**Correção sugerida:**
-
-```js
-const deletedCount = await db('usuarios').where({id: id}).del();
-
-if(!deletedCount || deletedCount === 0){
-    return false;
-}
-
-return true;
-```
-
-Assim você verifica corretamente se algum registro foi removido.
-
----
-
-### 4. Uso do cookie no login
-
-Você está enviando o token JWT tanto no corpo da resposta quanto em cookie HTTP-only:
-
-```js
-res.cookie('token', acess_token, {
-    maxAge: 60*60*1000,
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/'
-})
-
-res.status(200).json({acess_token});
-```
-
-Isso é uma boa prática, mas é importante que o cliente saiba que o token está disponível no cookie para autenticações futuras. Se o cliente só usar o token do corpo, o cookie pode ficar redundante. Além disso, o logout limpa o cookie, o que é coerente.
-
-Se você quiser simplificar, pode optar por enviar só o token no corpo e deixar o cliente armazenar no localStorage, mas o uso do cookie é mais seguro.
-
----
-
-### 5. Mensagens de erro no middleware de autenticação
-
-No `authMiddleware`, você tem:
-
-```js
-if(!token){
-    return next(new ApiError(401, "Token errado."));
-}
-
-jwt.verify(token, process.env.JWT_SECRET, (error, user) => {
-    if(error){
-        return next(new ApiError(401, "Chave Secreta diferente."));
-    }
-    
-    req.user = user;
-    next();
-})
-```
-
-As mensagens "Token errado." e "Chave Secreta diferente." podem ser mais descritivas para facilitar o entendimento. Por exemplo:
-
-- Para ausência do token: `"Token de autenticação não fornecido."`
-- Para token inválido ou expirado: `"Token de autenticação inválido ou expirado."`
-
-Isso ajuda clientes a entenderem o que deu errado sem expor detalhes sensíveis.
-
----
-
-### 6. Documentação no INSTRUCTIONS.md
-
-No seu arquivo `INSTRUCTIONS.md`, o exemplo de header para envio do token está assim:
-
-```
-Authorization: Bearer "token"
-```
-
-O correto é **sem aspas** ao redor do token:
-
-```
-Authorization: Bearer token
-```
-
-As aspas podem causar falha na autenticação, pois o token seria interpretado com aspas incluídas.
-
----
-
-### 7. Organização das rotas no `server.js`
-
-Você está usando os routers assim:
+- **Possível causa 1:** No seu `server.js` você faz:
 
 ```js
 app.use(agentesRouter);
@@ -179,7 +94,13 @@ app.use(casosRouter);
 app.use(authRouter);
 ```
 
-Isso funciona, mas o padrão mais comum e claro é especificar um caminho base para cada grupo de rotas, por exemplo:
+Mas não especifica um prefixo para as rotas. Se dentro do arquivo `agentesRoutes.js` você tem:
+
+```js
+router.get('/agentes', authMiddleware, agentesController.getAllAgentes);
+```
+
+Isso está certo, mas o ideal é usar o prefixo no `app.use` para evitar conflitos e garantir organização, assim:
 
 ```js
 app.use('/agentes', agentesRouter);
@@ -187,57 +108,247 @@ app.use('/casos', casosRouter);
 app.use('/auth', authRouter);
 ```
 
-Assim, as rotas ficam mais explícitas e evita possíveis conflitos.
+Caso contrário, pode haver conflito ou rota mal interpretada.
+
+- **Possível causa 2:** No seu `authController.login`, você retorna o token com a chave `access_token`:
+
+```js
+res.status(200).json({access_token});
+```
+
+Mas no `INSTRUCTIONS.md` e nos testes, o campo esperado é `acess_token` (com "c" só uma vez):
+
+```json
+{
+    "acess_token": "token"
+}
+```
+
+Repare que no seu código está com dois "c"s: `access_token`, mas o teste espera `acess_token`.
+
+Isso gera falha nos testes de login e autenticação, que impacta também os testes de agentes que precisam do token.
+
+- **Possível causa 3:** No `authController.login` você está setando o cookie do token, mas o teste provavelmente espera o token no corpo da resposta, e o nome do campo precisa bater exatamente com o esperado.
+
+- **Possível causa 4:** Em alguns pontos, você usa `next(new ApiError(...))` para erros, mas não está claro se seu middleware de erro está configurado para transformar isso em resposta HTTP corretamente. Isso pode impactar status e mensagens.
 
 ---
 
-### 8. Migrations e seeds
+## 3. Testes relacionados a casos que falharam
 
-Sua migration para criar a tabela `usuarios` está correta, com campos essenciais.
+Testes de criação, listagem, busca, atualização, deleção e filtros de casos falharam com status 400 ou 404.
 
-Só fique atento para garantir que as migrations foram aplicadas antes de rodar a aplicação, para evitar erros no banco.
+### O que seu código faz?
 
-Se precisar, revise este vídeo que explica bem como configurar banco com Docker e Knex:  
-[Configuração de Banco de Dados com Docker e Knex](https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s)
+O `casosController` está bem detalhado, com validações e tratamentos de erros. O repositório usa Knex para as queries.
 
----
+### Possíveis causas:
 
-## Recursos recomendados para aprofundar e corrigir os pontos acima 📚
+- Falta de validação adequada para os parâmetros `agente_id` e `status` em algumas rotas, ou inconsistência no tratamento de `agente_id` como string ou número.
+- Em `patchCaso`, você tem essa verificação:
 
-- Para entender melhor o uso correto do `next` no Express e tratamento de erros:  
-  [Refatoração e Boas Práticas de Código](https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s)
+```js
+if (agente_id !== undefined) {
+    if (typeof agente_id === "string") {
+        return res.status(404).json(errorHandler.handleError(404, "ID do agente não fornecido", "agenteInvalido", "ID do agente deve ser fornecido no formato de número."));
+    }
+    ...
+}
+```
 
-- Para aprender a usar o Zod e validação estrita de schemas:  
-  Documentação oficial do Zod (https://github.com/colinhacks/zod) e este vídeo:  
-  [Refatoração e Boas Práticas de Código](https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s) (contém dicas sobre validação)
+Mas essa validação pode ser problemática se o `agente_id` vier como string numérica (ex: "1"), que é comum em JSON. O correto é tentar converter para número e validar, não simplesmente rejeitar strings.
 
-- Para entender melhor o funcionamento do JWT e autenticação segura:  
-  [Esse vídeo, feito pelos meus criadores, fala muito bem sobre autenticação](https://www.youtube.com/watch?v=Q4LQOfYwujk)  
-  [Vídeo prático sobre JWT](https://www.youtube.com/watch?v=keS0JWOypIU)
-
-- Para aprofundar em hashing de senhas com bcrypt:  
-  [Vídeo sobre JWT e bcrypt](https://www.youtube.com/watch?v=L04Ln97AwoY)
-
----
-
-## Resumo dos principais pontos para focar:
-
-- ⚠️ Corrigir o uso incorreto de `throw next()` para `return next()` no tratamento de erros do `authController`.
-- ⚠️ Configurar o schema Zod para rejeitar campos extras no payload (usar `.strict()`).
-- ⚠️ Ajustar a função `deletarUsuario` para verificar corretamente o retorno do `del()` do Knex.
-- ⚠️ Melhorar mensagens de erro no middleware de autenticação para maior clareza.
-- ⚠️ Remover aspas no header Authorization no INSTRUCTIONS.md para evitar confusão.
-- ⚠️ Usar prefixos de rota no `server.js` para melhor organização (`app.use('/agentes', agentesRouter)`).
-- ⚠️ Garantir que as migrations e seeds estejam aplicadas antes de rodar a aplicação.
-- 🎯 Continuar usando boas práticas como o Zod, JWT, bcrypt e organização MVC.
+- Isso pode fazer com que o teste que envia o `agente_id` como string numérica falhe.
 
 ---
 
-Gabriel, você está no caminho certo e só precisa de alguns ajustes pontuais para deixar sua aplicação redondinha e profissional! 🚀 Continue praticando, revisando e aprimorando seu código. Se precisar, volte nos vídeos que recomendei para consolidar esses conceitos. Você tem um ótimo potencial, e a segurança da sua API está quase lá! 💪
+## 4. Testes bônus que falharam
 
-Se precisar, estou aqui para ajudar! 😉
+Você não passou os testes bônus, que envolvem:
 
-Boa codificação! 👨‍💻✨
+- Filtragem simples e complexa de casos e agentes.
+- Busca de agente responsável pelo caso.
+- Endpoint `/usuarios/me` para retornar dados do usuário logado.
+
+### O que falta?
+
+- Implementar o endpoint `/usuarios/me` que retorna os dados do usuário autenticado (você tem um método `getDados` no `authController`, mas verifique se está corretamente exposto e funcionando).
+- Melhorar a filtragem para agentes por data de incorporação com ordenação ascendente e descendente.
+- Melhorar a filtragem de casos por status e agente com mais robustez.
+- Implementar busca de agente responsável por caso corretamente.
+
+---
+
+# Correções e melhorias sugeridas
+
+### 1. Corrigir o nome do campo do token JWT no login
+
+No `authController.login`, altere:
+
+```js
+res.status(200).json({access_token});
+```
+
+para
+
+```js
+res.status(200).json({acess_token: access_token});
+```
+
+Assim você alinha com o esperado nos testes e documentação.
+
+---
+
+### 2. Ajustar o `server.js` para usar prefixos nas rotas
+
+Altere seu `server.js` para:
+
+```js
+app.use('/agentes', agentesRouter);
+app.use('/casos', casosRouter);
+app.use('/auth', authRouter);
+```
+
+Isso evita conflitos e deixa mais claro o caminho das rotas.
+
+---
+
+### 3. Revisar o middleware de erro para garantir que `ApiError` seja tratado corretamente
+
+Seu `errorHandler.js` deve capturar o erro do tipo `ApiError` e responder com o status e mensagem corretos. Exemplo:
+
+```js
+class ApiError extends Error {
+  constructor(statusCode, message) {
+    super(message);
+    this.statusCode = statusCode;
+  }
+}
+
+function errorHandler(err, req, res, next) {
+  if (err instanceof ApiError) {
+    return res.status(err.statusCode).json({ error: err.message });
+  }
+  console.error(err);
+  res.status(500).json({ error: 'Internal Server Error' });
+}
+
+module.exports = {
+  ApiError,
+  errorHandler,
+};
+```
+
+Se já tiver isso, ótimo! Caso contrário, ajuste para garantir que erros personalizados sejam enviados corretamente.
+
+---
+
+### 4. Ajustar validação do `agente_id` no `patchCaso`
+
+No trecho:
+
+```js
+if (agente_id !== undefined) {
+    if (typeof agente_id === "string") {
+        return res.status(404).json(errorHandler.handleError(404, "ID do agente não fornecido", "agenteInvalido", "ID do agente deve ser fornecido no formato de número."));
+    }
+    ...
+}
+```
+
+Sugiro substituir por algo assim:
+
+```js
+if (agente_id !== undefined) {
+    const agenteIdNum = Number(agente_id);
+    if (Number.isNaN(agenteIdNum) || !Number.isInteger(agenteIdNum)) {
+        return res.status(404).json(errorHandler.handleError(404, "ID do agente inválido", "agenteInvalido", "ID do agente deve ser um número inteiro."));
+    }
+    if (!await agentesRepository.encontrarAgenteById(agenteIdNum)) {
+        return res.status(404).json(errorHandler.handleError(404, "Agente não encontrado", "agenteNaoEncontrado", "Agente não encontrado. Verifique se o agente está registrado no sistema."));
+    }
+}
+```
+
+Assim você aceita strings numéricas e faz a validação correta.
+
+---
+
+### 5. Verificar se a migration da tabela `usuarios` está sendo executada corretamente
+
+Sua migration parece correta, mas certifique-se que a tabela `usuarios` está criada no banco com os campos certos e que as seeds estão rodando.
+
+---
+
+### 6. Implementar o endpoint `/usuarios/me` para passar o teste bônus
+
+Você já tem no `authRoutes.js`:
+
+```js
+router.get('/usuarios/me', authMiddleware, authController.getDados);
+```
+
+E no `authController.js`:
+
+```js
+async function getDados(req, res, next) {
+    const user = req.user;
+
+    if(!user) {
+        return next(new ApiError(404, "Usuário não foi encontrado."));
+    }
+
+    const dados = { nome: user.nome, email: user.email };
+
+    res.status(200).json(dados);    
+}
+```
+
+Só verifique se o `authMiddleware` está funcionando corretamente e preenchendo `req.user` com os dados do token. Teste a rota manualmente para garantir.
+
+---
+
+# Recursos que recomendo para você aprofundar e corrigir esses pontos:
+
+- **Autenticação e JWT**:  
+  [Esse vídeo, feito pelos meus criadores, fala muito bem sobre autenticação e segurança em APIs com JWT](https://www.youtube.com/watch?v=Q4LQOfYwujk)  
+  [Vídeo prático sobre JWT](https://www.youtube.com/watch?v=keS0JWOypIU)  
+  [Vídeo que aborda uso de JWT e bcrypt juntos](https://www.youtube.com/watch?v=L04Ln97AwoY)
+
+- **Knex.js e Migrations**:  
+  [Documentação oficial do Knex.js sobre migrations](https://www.youtube.com/watch?v=dXWy_aGCW1E)  
+  [Guia detalhado do Knex Query Builder](https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s)  
+
+- **Estrutura MVC e boas práticas em Node.js**:  
+  [Arquitetura MVC para Node.js explicada](https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s)
+
+---
+
+# Resumo rápido dos pontos principais para focar:
+
+- [ ] Corrigir o nome do campo do token JWT no login para `acess_token` (com um "c").
+- [ ] Ajustar o `server.js` para usar prefixos nas rotas (`app.use('/agentes', agentesRouter)` etc).
+- [ ] Garantir que o middleware de erro (`errorHandler`) trata corretamente o `ApiError` e retorna status e JSON conforme esperado.
+- [ ] Melhorar validação do parâmetro `agente_id` para aceitar string numérica e validar corretamente.
+- [ ] Verificar se a migration da tabela `usuarios` foi executada e o banco está consistente.
+- [ ] Testar e garantir que o endpoint `/usuarios/me` retorna os dados do usuário autenticado.
+- [ ] Testar manualmente os endpoints que falharam para entender o comportamento e ajustar conforme os testes esperam.
+
+---
+
+# Finalizando...
+
+Gabriel, seu projeto está no caminho certo e já tem várias implementações sólidas! 💪 Com esses ajustes que te indiquei, você vai conseguir destravar os testes que faltam e melhorar bastante sua nota. Continue assim, revisando cuidadosamente os detalhes que os testes pedem, alinhando os nomes e formatos das respostas, e validando os dados de entrada.
+
+Se precisar, volte aos vídeos recomendados para entender melhor autenticação, JWT, bcrypt e organização de projetos Node.js. Isso vai te ajudar a consolidar o conhecimento e evitar erros comuns.
+
+Estou na torcida pelo seu sucesso! 🚀 Qualquer dúvida, só chamar que vamos destrinchar juntos! 😉
+
+Um abraço e bons códigos! 👨‍💻👩‍💻
+
+---
+
+Se quiser, posso ajudar você a corrigir algum trecho específico do código. Quer que eu faça isso?
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
