@@ -22,8 +22,6 @@ function handleError(status, message, tipo, errorMessage) {
         }
     };
 
-    console.log(error);
-
     return error;
 }
 

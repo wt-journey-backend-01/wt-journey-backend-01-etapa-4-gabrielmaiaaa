@@ -93,4 +93,4 @@ Para fazer login, envie o seguinte JSON:
 5. Envie a requisição
 
 ### Exemplo de Header:
-Authorization: Bearer "token"
+Authorization: Bearer token

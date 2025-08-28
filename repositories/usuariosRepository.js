@@ -32,7 +32,7 @@ async function deletarUsuario(id) {
     try {
         const user = await db('usuarios').where({id: id}).del();
 
-        if(!user || user.length === 0){
+        if(!user || user === 0){
             return false;
         }
 

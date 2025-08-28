@@ -9,7 +9,7 @@ const usuarioRegistroSchema = z.object({
     .regex(/[A-Z]/, "Senha deve conter letra maiúscula")
     .regex(/[0-9]/, "Senha deve conter número")
     .regex(/[^a-zA-Z0-9]/, "Senha deve conter caractere especial"),
-});
+}).strict();
 
 const usuarioLoginSchema = z.object({
   email: z.string().email("Email inválido"),

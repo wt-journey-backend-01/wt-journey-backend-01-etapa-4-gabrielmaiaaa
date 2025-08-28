@@ -7,12 +7,12 @@ function authMiddleware(req, res, next) {
     const token = tokenHeader && tokenHeader.split(" ")[1];
 
     if(!token){
-        return next(new ApiError(401, "Token errado."));
+        return next(new ApiError(401, "Token de autenticação não fornecido."));
     }
 
     jwt.verify(token, process.env.JWT_SECRET, (error, user) => {
         if(error){
-            return next(new ApiError(401, "Chave Secreta diferente."));
+            return next(new ApiError(401, "Token de autenticação inválido ou expirado."));
         }
         
         req.user = user;

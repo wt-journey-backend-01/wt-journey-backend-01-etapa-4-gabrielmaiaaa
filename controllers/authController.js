@@ -10,7 +10,7 @@ async function register(req, res, next) {
         const dados = usuarioRegistroSchema.parse(req.body);
 
         if(await usuarioRepository.encontrarUsuarioPorEmail(dados.email)){            
-            throw next(new ApiError(400, "Esse email já está em uso."));
+            return next(new ApiError(400, "Esse email já está em uso."));
         }             
 
         const senhaHash = await bcrypt.hash(dados.senha, 10);
@@ -18,13 +18,13 @@ async function register(req, res, next) {
         const user = await usuarioRepository.cadastrarUsuario(dadosUsuario);
 
         if(!user){
-            throw next(new ApiError(404, "Usuário não foi encontrado."));
+            return next(new ApiError(404, "Usuário não foi encontrado."));
         }
         
         res.status(201).json(user);
     } catch(error) {
         if (error instanceof z.ZodError) {
-            throw next(new ApiError(400, "Parâmetros inválidos"))
+            return next(new ApiError(400, "Parâmetros inválidos"))
         }
         next(error);
     }
@@ -37,20 +37,20 @@ async function login(req, res, next) {
         const user = await usuarioRepository.encontrarUsuarioPorEmail(dados.email);
 
         if(!user){
-            throw next(new ApiError(404, "Usuário não foi encontrado."));
+            return next(new ApiError(404, "Usuário não foi encontrado."));
         }
 
         const isSenhaValida = await bcrypt.compare(dados.senha, user.senha);
 
         if(!isSenhaValida){
-            throw next(new ApiError(401, "Senha errada."));
+            return next(new ApiError(401, "Senha errada."));
         }
 
-        const acess_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET, {
+        const access_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET, {
             expiresIn: '1h'
         })
 
-        res.cookie('token', acess_token, {
+        res.cookie('token', access_token, {
             maxAge: 60*60*1000,
             httpOnly: true,
             sameSite: 'lax',
@@ -58,10 +58,10 @@ async function login(req, res, next) {
             path: '/'
         })
 
-        res.status(200).json({acess_token});        
+        res.status(200).json({access_token});        
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw next(new ApiError(400, "Parâmetros inválidos"))
+            return next(new ApiError(400, "Parâmetros inválidos"))
         }
         next(error);
     }
@@ -85,13 +85,13 @@ async function deletar(req, res, next) {
         const status = await usuarioRepository.deletarUsuario(id);
 
         if(!status){
-            throw next(new ApiError(404, "Usuário não foi encontrado."));
+            return next(new ApiError(404, "Usuário não foi encontrado."));
         }
 
         res.status(204).send();
     } catch (error) {
         if (error instanceof z.ZodError) {
-            throw next(new ApiError(400, "Parâmetros inválidos"))
+            return next(new ApiError(400, "Parâmetros inválidos"))
         }
         next(error);
     }
@@ -101,7 +101,7 @@ async function getDados(req, res, next) {
     const user = req.user;
 
     if(!user) {
-        throw next(new ApiError(404, "Usuário não foi encontrado."));
+        return next(new ApiError(404, "Usuário não foi encontrado."));
     }
 
     const dados = { nome: user.nome, email: user.email };
