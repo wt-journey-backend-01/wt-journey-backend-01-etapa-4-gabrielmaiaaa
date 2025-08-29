@@ -1,4 +1,5 @@
 const express = require('express');
+const cookieParser = require('cookie-parser')
 const app = express();
 const PORT = 3000;
 
@@ -8,6 +9,7 @@ const authRouter = require('./routes/authRoutes');
 const { errorHandler } = require("./utils/errorHandler");
 
 app.use(express.json());
+app.use(cookieParser());
 
 app.use(agentesRouter);
 app.use(casosRouter);

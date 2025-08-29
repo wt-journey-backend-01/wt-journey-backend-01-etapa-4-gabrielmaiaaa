@@ -78,7 +78,7 @@ Para fazer login, envie o seguinte JSON:
 **Resposta de Sucesso:**
 ```json
 {
-    "acess_token": "token"
+    "access_token": "token"
 }
 ```
 

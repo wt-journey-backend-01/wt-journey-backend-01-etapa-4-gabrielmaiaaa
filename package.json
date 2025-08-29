@@ -20,6 +20,7 @@
   "homepage": "https://github.com/wt-journey-backend-01/wt-journey-backend-01-etapa-4-gabrielmaiaaa#readme",
   "dependencies": {
     "bcryptjs": "^3.0.2",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.2.1",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",

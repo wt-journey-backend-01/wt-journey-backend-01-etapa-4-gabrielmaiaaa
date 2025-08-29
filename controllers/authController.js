@@ -20,8 +20,8 @@ async function register(req, res, next) {
         if(!user){
             return next(new ApiError(404, "Usuário não foi encontrado."));
         }
-        
-        res.status(201).json(user);
+
+        res.status(201).json({id: user.id, nome: user.nome, email: user.email});
     } catch(error) {
         if (error instanceof z.ZodError) {
             return next(new ApiError(400, "Parâmetros inválidos"))
@@ -91,7 +91,7 @@ async function deletar(req, res, next) {
         res.status(204).send();
     } catch (error) {
         if (error instanceof z.ZodError) {
-            return next(new ApiError(400, "Parâmetros inválidos"))
+            return next(new ApiError(404, "ID inválido"))
         }
         next(error);
     }
