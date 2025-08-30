@@ -1,4 +1,4 @@
-const usuarioRepository = require('../repositories/usuariosRepository');
+const usuariosRepository = require('../repositories/usuariosRepository');
 const { usuarioRegistroSchema, usuarioLoginSchema, validarID } = require('../utils/usuarioValidacao');
 const { ApiError } = require("../utils/errorHandler");
 const bcrypt = require('bcryptjs');
@@ -9,13 +9,13 @@ async function register(req, res, next) {
     try{
         const dados = usuarioRegistroSchema.parse(req.body);
 
-        if(await usuarioRepository.encontrarUsuarioPorEmail(dados.email)){            
+        if(await usuariosRepository.encontrarUsuarioPorEmail(dados.email)){            
             return next(new ApiError(400, "Esse email já está em uso."));
         }             
 
         const senhaHash = await bcrypt.hash(dados.senha, 10);
         const dadosUsuario = { nome: dados.nome, email: dados.email, senha: senhaHash };
-        const user = await usuarioRepository.cadastrarUsuario(dadosUsuario);
+        const user = await usuariosRepository.cadastrarUsuario(dadosUsuario);
 
         if(!user){
             return next(new ApiError(404, "Usuário não foi encontrado."));
@@ -34,7 +34,7 @@ async function login(req, res, next) {
     try {
         const dados = usuarioLoginSchema.parse(req.body);
 
-        const user = await usuarioRepository.encontrarUsuarioPorEmail(dados.email);
+        const user = await usuariosRepository.encontrarUsuarioPorEmail(dados.email);
 
         if(!user){
             return next(new ApiError(404, "Usuário não foi encontrado."));
@@ -46,11 +46,11 @@ async function login(req, res, next) {
             return next(new ApiError(401, "Senha errada."));
         }
 
-        const access_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET, {
+        const access_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET || 'secret', {
             expiresIn: '1h'
         })
 
-        res.cookie('token', access_token, {
+        res.cookie('access_token', access_token, {
             maxAge: 60*60*1000,
             httpOnly: true,
             sameSite: 'lax',
@@ -68,12 +68,7 @@ async function login(req, res, next) {
 }
 
 async function logout(req, res) {
-    res.clearCookie('token', {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax',
-        path: '/'
-    });
+    res.clearCookie('access_token', { path: '/' });
     
     res.status(200).send();
 }
@@ -82,7 +77,7 @@ async function deletar(req, res, next) {
     try {
         const { id } = validarID.parse((req.params));    
         
-        const status = await usuarioRepository.deletarUsuario(id);
+        const status = await usuariosRepository.deletarUsuario(id);
 
         if(!status){
             return next(new ApiError(404, "Usuário não foi encontrado."));

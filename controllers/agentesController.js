@@ -1,5 +1,4 @@
-const agentesRepository = require("../repositories/agentesRepository")
-const errorHandler = require("../utils/errorHandler");
+const agentesRepository = require("../repositories/agentesRepository");
 const { ApiError } = require("../utils/errorHandler");
 const { dadosAgentes, dadosParcialAgentes, agenteIdValido, agenteCargoESorteValido } = require('../utils/agenteValidacao');
 const { z } = require('zod');
@@ -44,7 +43,7 @@ async function getAllAgentes(req, res, next) {
             const dados = await agentesRepository.listarAgentesPorCargo(cargo);
             
             if(!dados){
-                return next(new ApiError(404, "Nenhum agente foi encontrado com esse id"));
+                return next(new ApiError(404, "Nenhum agente foi encontrado com esse cargo"));
             }
 
             return res.status(200).json(dados);
@@ -90,7 +89,7 @@ async function getAgente(req, res, next) {
         if (error instanceof z.ZodError) {
             return next(new ApiError(404, "ID inválido"))
         }
-        next(error);
+        return next(error);
     }
 }
 
@@ -127,7 +126,7 @@ async function putAgente(req, res, next) {
             if (error instanceof z.ZodError) {
                 return next(new ApiError(404, "ID inválido"))
             } 
-            next(error);  
+            return next(error);  
         }
 
         const { nome, dataDeIncorporacao, cargo } = dadosAgentes.parse(req.body);
@@ -161,7 +160,7 @@ async function patchAgente(req, res, next) {
             if (error instanceof z.ZodError) {
                 return next(new ApiError(404, "ID inválido"))
             } 
-            next(error);  
+            return next(error);  
         }
 
         const { nome, dataDeIncorporacao, cargo } = dadosParcialAgentes.parse(req.body);

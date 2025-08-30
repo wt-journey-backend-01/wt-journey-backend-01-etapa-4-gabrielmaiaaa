@@ -2,7 +2,7 @@ const jwt = require('jsonwebtoken');
 const { ApiError } = require("../utils/errorHandler");
 
 function authMiddleware(req, res, next) {
-    const cookieToken = req.cookies?.token;
+    const cookieToken = req.cookies?.access_token;
     const authHeader = req.headers["authorization"];
     const headerToken = authHeader && authHeader.split(" ")[1];
 
