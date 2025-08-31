@@ -57,6 +57,7 @@ async function login(req, res, next) {
             secure: process.env.NODE_ENV === 'production',
             path: '/'
         })
+        console.log('TOKEN GERADO:', access_token); 
 
         res.status(200).json({access_token});        
     } catch (error) {
