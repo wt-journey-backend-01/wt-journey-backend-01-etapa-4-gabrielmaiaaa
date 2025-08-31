@@ -47,23 +47,14 @@ async function getAllCasos(req, res, next) {
         const { agente_id, status } = validarAgente_idEStatus.parse(req.query);
 
         if (agente_id && status) {
-            if (!req.user) {
-                return next(new ApiError(401, "Token de autenticação não fornecido."));
-            }
             return listarPorAgenteEStatus(res, agente_id, status, next);
         }
 
         else if (agente_id) {
-            if (!req.user) {
-                return next(new ApiError(401, "Token de autenticação não fornecido."));
-            }
             return listarPorAgente(res, agente_id, next);
         }
 
         else if (status) {
-            if (!req.user) {
-                return next(new ApiError(401, "Token de autenticação não fornecido."));
-            }
             return listarPorStatus(res, status, next);
         }
 
@@ -86,10 +77,6 @@ async function getCaso(req, res, next) {
     try {
         const { id } = validarIDs.parse(req.params);
 
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
-
         const caso = await casosRepository.findById(id);
 
         if (!caso) {
@@ -108,10 +95,6 @@ async function getCaso(req, res, next) {
 async function postCaso(req, res, next) {
     try {
         const { titulo, descricao, status, agente_id } = validarDadosCasos.parse(req.body);
-        
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
 
         if (!await agentesRepository.encontrarAgenteById(agente_id)) {
             return next(new ApiError(404, "Agente informado não encontrado."));
@@ -146,10 +129,6 @@ async function putCaso(req, res, next) {
         }
 
         const { titulo, descricao, status, agente_id } = validarDadosCasos.parse(req.body);
-        
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
 
         if (!await agentesRepository.encontrarAgenteById(agente_id)) {
             return next(new ApiError(404, "Agente não encontrado. Verifique se o agente está registrado no sistema."));
@@ -184,10 +163,6 @@ async function patchCaso(req, res, next) {
         }
 
         const { titulo, descricao, status, agente_id } = validarDadosParcialCasos.parse(req.body);
-        
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
 
         const casoAtualizado = { titulo, descricao, status, agente_id };
         const dados = await casosRepository.atualizarCaso(id, casoAtualizado);
@@ -208,10 +183,6 @@ async function patchCaso(req, res, next) {
 async function deleteCaso(req, res, next) {
     try {
         const { id } = validarIDs.parse(req.params);
-        
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
 
         const status = await casosRepository.apagarCaso(id);
 
@@ -231,10 +202,6 @@ async function deleteCaso(req, res, next) {
 async function getAgenteDoCaso(req, res, next) {
     try {
         const { caso_id } = validarIDs.parse(req.params);    
-            
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
 
         if (!await casosRepository.findById(caso_id)) {
             return next(new ApiError(404, "ID do caso informado não encontrado."));
@@ -258,10 +225,6 @@ async function getAgenteDoCaso(req, res, next) {
 async function getCasosPorString(req, res, next) {
     try {
         const { q } = validarString.parse(req.query);
-            
-        if (!req.user) {
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
-        }
 
         const dados = await casosRepository.encontrarCasoPorString(q);
 

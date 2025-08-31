@@ -4,12 +4,6 @@
  */
 exports.up = function(knex) {
   return knex.schema
-            .createTable('usuarios', (table) => {
-                table.increments('id').primary();
-                table.string('nome').notNullable();
-                table.string('email').unique().notNullable();
-                table.string('senha').notNullable();
-            })
             .createTable('agentes', (table) => {
             table.increments('id').primary();
             table.string('nome').notNullable();
@@ -23,6 +17,12 @@ exports.up = function(knex) {
             table.enu('status', ['aberto', 'solucionado']).notNullable();
             table.integer('agente_id').notNullable();
             table.foreign('agente_id').references('id').inTable('agentes').onDelete('CASCADE');
+            })
+            .createTable('usuarios', (table) => {
+                table.increments('id').primary();
+                table.string('nome').notNullable();
+                table.string('email').unique().notNullable();
+                table.string('senha').notNullable();
             });
 };
 
