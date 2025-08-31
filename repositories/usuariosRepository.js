@@ -1,8 +1,8 @@
 const db = require('../db/db');
 
 async function encontrarUsuarioPorEmail(email) {
-    try {        
-        const user = await db('usuarios').where({email: email});        
+    try {
+        const user = await db('usuarios').whereRaw('LOWER(email) = ?', email.toLowerCase());
 
         if(!user || user.length === 0) {
             return false;
@@ -11,7 +11,6 @@ async function encontrarUsuarioPorEmail(email) {
         return user[0];
     } catch (error) {
         console.log(error);
-
         return false;        
     }
 }

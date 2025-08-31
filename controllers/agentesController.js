@@ -95,7 +95,7 @@ async function getAgente(req, res, next) {
 
 async function postAgente(req, res, next) {
     try {
-        const { nome, dataDeIncorporacao, cargo } = dadosAgentes.parse(req.body);
+        const { nome, dataDeIncorporacao, cargo } = dadosAgentes.parse(req.body);        
 
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new ApiError(400, "Data de Incorporação inválida ou no futuro ou com mais de 120 anos."));

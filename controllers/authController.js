@@ -8,8 +8,9 @@ const { z } = require('zod');
 async function register(req, res, next) {
     try{
         const dados = usuarioRegistroSchema.parse(req.body);
+        const usuarioExistente = await usuariosRepository.encontrarUsuarioPorEmail(dados.email);
 
-        if(await usuariosRepository.encontrarUsuarioPorEmail(dados.email)){            
+        if(usuarioExistente){            
             return next(new ApiError(400, "Esse email já está em uso."));
         }             
 
@@ -18,7 +19,7 @@ async function register(req, res, next) {
         const user = await usuariosRepository.cadastrarUsuario(dadosUsuario);
 
         if(!user){
-            return next(new ApiError(404, "Usuário não foi encontrado."));
+            return next(new ApiError(404, "Usuário não foi criado."));
         }
 
         res.status(201).json({id: user.id, nome: user.nome, email: user.email});
@@ -33,21 +34,20 @@ async function register(req, res, next) {
 async function login(req, res, next) {
     try {
         const dados = usuarioLoginSchema.parse(req.body);
-
         const user = await usuariosRepository.encontrarUsuarioPorEmail(dados.email);
 
         if(!user){
-            return next(new ApiError(404, "Usuário não foi encontrado."));
+            return next(new ApiError(401, "Dados errados."));
         }
 
         const isSenhaValida = await bcrypt.compare(dados.senha, user.senha);
 
         if(!isSenhaValida){
-            return next(new ApiError(401, "Senha errada."));
+            return next(new ApiError(401, "Dados errados."));
         }
 
         const access_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET || 'secret', {
-            expiresIn: '1h'
+            expiresIn: '1d'
         })
 
         res.cookie('access_token', access_token, {

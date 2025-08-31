@@ -28,7 +28,7 @@ async function listarPorStatus(res, status, next) {
     return res.status(200).json(dados);
 }
 
-async function listarPorAgenteEStatus(res, agente_id, next, status) {
+async function listarPorAgenteEStatus(res, agente_id, status, next) {
     if (!await agentesRepository.encontrarAgenteById(agente_id)) {
         return next(new ApiError(404, "ID do agente informado não encontrado no sistema."));
     }
@@ -47,15 +47,15 @@ async function getAllCasos(req, res, next) {
         const { agente_id, status } = validarAgente_idEStatus.parse(req.query);
 
         if (agente_id && status) {
-            return listarPorAgenteEStatus(res, agente_id, status);
+            return listarPorAgenteEStatus(res, agente_id, status, next);
         }
 
         else if (agente_id) {
-            return listarPorAgente(res, agente_id);
+            return listarPorAgente(res, agente_id, next);
         }
 
         else if (status) {
-            return listarPorStatus(res, status);
+            return listarPorStatus(res, status, next);
         }
 
         const dados = await casosRepository.findAll();
@@ -120,7 +120,7 @@ async function putCaso(req, res, next) {
     try {
         let id;
         try {
-            id = validarIDs.parse(req.params);            
+            id = validarIDs.parse(req.params).id;
         } catch (error) {
             if (error instanceof z.ZodError) {
                 return next(new ApiError(404, "ID inválido"))
@@ -154,7 +154,7 @@ async function patchCaso(req, res, next) {
     try {
         let id;
         try {
-            id = validarIDs.parse(req.params);            
+            id = validarIDs.parse(req.params).id;            
         } catch (error) {
             if (error instanceof z.ZodError) {
                 return next(new ApiError(404, "ID inválido"))

@@ -3,11 +3,11 @@ const express = require('express');
 const cookieParser = require('cookie-parser');
 const app = express();
 const PORT = 3000;
+const { errorHandler } = require("./utils/errorHandler");
 
 const agentesRouter = require('./routes/agentesRoutes');
 const casosRouter = require('./routes/casosRoutes');
 const authRouter = require('./routes/authRoutes');
-const { errorHandler } = require("./utils/errorHandler");
 
 app.use(express.json());
 app.use(cookieParser());
