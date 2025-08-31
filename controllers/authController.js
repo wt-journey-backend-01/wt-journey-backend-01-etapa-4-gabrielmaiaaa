@@ -93,6 +93,7 @@ async function deletar(req, res, next) {
 }
 
 async function getDados(req, res, next) {
+    try {
     const user = req.user;
 
     if(!user) {
@@ -102,6 +103,9 @@ async function getDados(req, res, next) {
     const dados = { nome: user.nome, email: user.email };
 
     res.status(200).json(dados);    
+    } catch (error) {
+        next(error);        
+    }
 }
 
 module.exports = {
