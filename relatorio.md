@@ -1,43 +1,28 @@
 <sup>Esse é um feedback gerado por IA, ele pode conter erros.</sup>
 
-Você tem 3 créditos restantes para usar o sistema de feedback AI.
+Você tem 2 créditos restantes para usar o sistema de feedback AI.
 
 # Feedback para gabrielmaiaaa:
 
 Nota final: **48.7/100**
 
-Olá, gabrielmaiaaa! 🎉
+Olá, gabrielmaiaaa! 👋🚀
 
-Primeiramente, parabéns pelo esforço e pela entrega do seu projeto! Você estruturou muito bem sua aplicação, seguindo a arquitetura MVC com controllers, repositories, routes e middlewares, o que é fundamental para projetos Node.js escaláveis e organizados. Também mandou bem na implementação da autenticação com JWT e bcrypt, e seu código mostra preocupação com validações usando `zod`, o que é ótimo para garantir a qualidade dos dados que entram no sistema.
+Primeiramente, parabéns pelo esforço e dedicação em entregar sua API com autenticação, autorização e segurança! 🎉 Você conseguiu implementar várias funcionalidades importantes, como o registro, login, logout, proteção de rotas com middleware e até mesmo a organização do projeto em camadas (controllers, repositories, middlewares). Isso mostra uma boa compreensão da arquitetura MVC e boas práticas em Node.js.
 
-Além disso, você conseguiu passar diversos testes importantes, como:
-
-- Criação, login e logout de usuários com JWT válido.
-- Proteção das rotas de agentes e casos via middleware de autenticação.
-- Validações rigorosas para os dados dos usuários, agentes e casos.
-- Deleção correta de usuários, agentes e casos.
-- Tratamento de erros com mensagens personalizadas.
-- Implementação dos endpoints básicos de agentes e casos.
-
-E você também avançou nos bônus, como:
-
-- Endpoint `/usuarios/me` para retornar dados do usuário autenticado.
-- Filtros e buscas nos agentes e casos.
-- Mensagens customizadas de erro para validações.
-
-Agora, vamos analisar os pontos que precisam de atenção para você destravar a nota e deixar seu projeto ainda mais robusto! 🚀
+Além disso, você passou todos os testes base essenciais relacionados a usuários (registro, login, logout, deleção) e também conseguiu garantir a proteção das rotas com JWT, o que é um ponto muito positivo! 👏
 
 ---
 
-## Análise dos Testes que Falharam e Causas Raiz 🔍
+### Agora vamos analisar juntos os pontos onde os testes falharam e o que pode estar causando esses erros, para que você possa destravar sua nota e ter uma aplicação ainda mais robusta! 🔍
 
-### 1. **Erro 400 ao tentar criar usuário com email já em uso**
+---
 
-**O que aconteceu?**
+## 1. Testes que falharam e análise das causas
 
-O teste espera que, ao tentar registrar um usuário com um email que já existe no banco, o sistema retorne um status 400 (Bad Request).
+### Teste: `'USERS: Recebe erro 400 ao tentar criar um usuário com e-mail já em uso'`
 
-**Seu código relevante:**
+Você tem uma verificação no seu controller que faz isso:
 
 ```js
 const usuarioExistente = await usuariosRepository.encontrarUsuarioPorEmail(dados.email);
@@ -47,295 +32,213 @@ if(usuarioExistente){
 }
 ```
 
-**Análise:**
+**Possível causa:**  
+O teste espera que, ao tentar registrar um usuário com um email já existente, você retorne status 400 com essa mensagem. No seu código, isso parece correto.  
 
-Você fez a verificação corretamente, mas a função `encontrarUsuarioPorEmail` no `usuariosRepository` pode estar retornando `false` ou um objeto, dependendo se o usuário existe ou não. Se a função retornar algo diferente do esperado (ex: `undefined`), o teste pode falhar.
+**Mas atenção!** No repositório `usuariosRepository.js`, a função `encontrarUsuarioPorEmail` faz:
 
-Além disso, verifique se o email está sendo comparado de forma case insensitive no repositório (você usou `.whereRaw('LOWER(email) = ?', email.toLowerCase())` que está correto).
-
-**Possível causa:**
-
-- Talvez o teste esteja enviando o email com letras maiúsculas/minúsculas e o banco não esteja tratando isso corretamente.
-- Ou o usuário está sendo criado, mas a resposta do endpoint não está exatamente conforme esperado (ex: formato JSON, status code).
-
-**Sugestão:**
-
-Garanta que a resposta seja exatamente:
-
-```json
-{
-  "message": "Esse email já está em uso."
+```js
+const user = await db('usuarios').whereRaw('LOWER(email) = ?', email.toLowerCase());
+if(!user || user.length === 0) {
+    return false;
 }
+return user[0];
 ```
 
-Ou que a mensagem de erro seja capturada corretamente pelo middleware de erro.
+Aqui, você está usando `whereRaw` com parâmetro `email.toLowerCase()`, mas o segundo argumento do `whereRaw` precisa ser um array, caso contrário o Knex pode não substituir corretamente o parâmetro. Isso pode fazer com que a consulta não funcione como esperado, e o sistema não detecte que o email já existe.
+
+**Sugestão de correção:**
+
+Altere para:
+
+```js
+const user = await db('usuarios').whereRaw('LOWER(email) = ?', [email.toLowerCase()]);
+```
+
+Assim, o parâmetro será substituído corretamente.
 
 ---
 
-### 2. **Falha na criação de agentes (status code 201 e dados inalterados)**
+### Testes relacionados a agentes (AGENTS) que falharam, por exemplo:
 
-**O que aconteceu?**
+- `'AGENTS: Cria agentes corretamente com status code 201 e os dados inalterados do agente mais seu ID'`
+- `'AGENTS: Recebe status code 400 ao tentar criar agente com payload em formato incorreto'`
+- `'AGENTS: Recebe status 404 ao tentar buscar um agente inexistente'`
+- `'AGENTS: Recebe status code 401 ao tentar buscar agente corretamente mas sem header de autorização com token JWT'`
+- Entre outros...
 
-O teste espera que ao criar um agente, o status seja 201 e os dados retornados sejam exatamente os mesmos enviados, mais o ID gerado.
+Você implementou muito bem os controllers, repositories e validações com o Zod. Porém, alguns testes falharam indicando que sua API não está respondendo corretamente em algumas situações.
 
-**Seu código relevante:**
+**Possíveis causas comuns:**
 
-```js
-const novoAgente = { nome, dataDeIncorporacao, cargo };
-const dados = await agentesRepository.adicionarAgente(novoAgente);
+- **Status code incorreto:** No seu controller `postAgente`, você retorna `next(new ApiError(404, "Não foi possivel criar esse agente"))` caso a criação falhe. O correto para erro de criação é 400 (Bad Request) ou 500 (Internal Server Error), dependendo do motivo. 404 é para "não encontrado", que não faz sentido aqui.
 
-if(!dados){
-    return next(new ApiError(404, "Não foi possivel criar esse agente"));
-}
+- **Validação de payload:** Certifique-se que o seu schema Zod para agente está cobrindo todos os casos de erro que o teste espera. Por exemplo, o teste pode enviar campos extras ou faltar campos obrigatórios. Seu schema deve rejeitar essas requisições com status 400.
 
-res.status(201).json(dados);
-```
-
-**Análise:**
-
-Aqui o fluxo está correto, mas o problema pode estar no `agentesRepository.adicionarAgente`.
-
-Veja que você chama:
+- **Middleware de autenticação:** Você está aplicando o middleware corretamente nas rotas de agentes? No seu `agentesRoutes.js` você faz:
 
 ```js
-const agente = await db("agentes").insert(novoAgente).returning("*");
-return formatarData(agente[0]);
+router.get('/agentes', authMiddleware, agentesController.getAllAgentes);
 ```
 
-E a função `formatarData` faz:
-
-```js
-agente.dataDeIncorporacao = agente.dataDeIncorporacao.toISOString().split('T')[0];
-```
-
-Se o campo `dataDeIncorporacao` estiver vindo como string ou nulo, isso pode causar erro ou retornar dados diferentes.
-
-**Possível causa:**
-
-- O formato da data pode estar sendo alterado ou não estar consistente.
-- O teste pode esperar o formato da data exatamente como enviado, e a formatação pode estar diferente.
-
-**Sugestão:**
-
-Confirme que o formato da data retornada está exatamente como o teste espera (provavelmente `YYYY-MM-DD`), o que você já tenta fazer no `formatarData`. Teste se o campo está vindo como objeto Date antes do `.toISOString()`.
+Isso está correto. Porém, os testes que falham com status 401 indicam que você pode não estar retornando o status 401 corretamente para requisições sem token ou com token inválido. Seu middleware parece estar bem implementado, mas vale a pena verificar se a variável de ambiente `JWT_SECRET` está definida corretamente no ambiente de testes, para que o `jwt.verify` funcione.
 
 ---
 
-### 3. **Testes 404 e 400 para agentes com IDs inválidos ou inexistentes**
+### Testes relacionados a casos (CASES) que falharam, por exemplo:
 
-**O que aconteceu?**
+- `'CASES: Cria casos corretamente com status code 201 e retorna dados inalterados do caso criado mais seu ID'`
+- `'CASES: Recebe status code 404 ao tentar criar caso com ID de agente inexistente'`
+- `'CASES: Recebe status code 400 ao tentar criar caso com payload em formato incorreto'`
+- `'CASES: Recebe status code 404 ao tentar buscar um caso por ID inválido'`
+- `'CASES: Recebe status code 401 ao tentar criar caso sem header de autorização com JWT'`
+- Entre outros...
 
-Os testes esperam que ao buscar, atualizar ou deletar agentes com IDs inválidos (ex: strings não numéricas) ou que não existem no banco, o sistema retorne status 404 ou 400 conforme o caso.
+Você fez uma boa separação das funções no `casosController.js` e usou validações com Zod. Ainda assim, alguns testes falharam.
 
-**Seu código relevante:**
+**Possíveis causas:**
 
-Você usa `zod` para validar o ID:
+- A validação do `agente_id` no corpo do caso precisa garantir que o agente exista antes de criar o caso, o que você já faz:
 
 ```js
-const { id } = agenteIdValido.parse(req.params);
-```
-
-E trata erros assim:
-
-```js
-if (error instanceof z.ZodError) {
-    return next(new ApiError(404, "ID inválido"))
+if (!await agentesRepository.encontrarAgenteById(agente_id)) {
+    return next(new ApiError(404, "Agente informado não encontrado."));
 }
 ```
 
-**Análise:**
+- Porém, certifique-se de que o schema que valida o payload do caso (`validarDadosCasos`) está correto e rejeita campos extras ou faltantes, para que o teste de 400 seja satisfeito.
 
-- Usar status 404 para ID inválido pode confundir, pois 404 é para recurso não encontrado. IDs inválidos (ex: letras onde deveria ser número) deveriam retornar 400 (Bad Request).
-- O teste pode estar esperando 400 para IDs inválidos e 404 para IDs corretos mas não encontrados.
+- Em alguns métodos, você retorna 404 para erros que poderiam ser 400, por exemplo, quando o ID é inválido (formato errado). O ideal é retornar 400 para erro de formato inválido, e 404 para ID válido mas não encontrado.
 
-**Sugestão:**
+---
 
-Altere o tratamento para:
+### Testes bônus que falharam
 
-- 400 Bad Request para IDs inválidos (falha na validação).
-- 404 Not Found para IDs válidos mas que não existem.
+- Filtragem por status, agente, keywords, busca de casos do agente, etc.
 
-Exemplo:
+Aqui, você implementou os endpoints e funções no repositório, mas os testes indicam que talvez a implementação não esteja 100% correta ou que a documentação/instruções não estejam claras para esses filtros.
+
+Recomendo revisar os métodos:
+
+- `listarCasosPorStatus`
+- `listarCasosPorAgente`
+- `encontrarCasoPorString`
+
+E garantir que os parâmetros de query estejam sendo tratados corretamente no controller, e que a resposta esteja no formato esperado.
+
+---
+
+## 2. Sobre a Estrutura do Projeto
+
+Sua estrutura está muito bem organizada e segue exatamente o que foi pedido! 👏
+
+Você tem:
+
+- `routes/` com os arquivos `agentesRoutes.js`, `casosRoutes.js` e `authRoutes.js`
+- `controllers/` com os arquivos correspondentes
+- `repositories/` para abstração do banco
+- `middlewares/authMiddleware.js` para proteção das rotas
+- `db/` com `migrations/`, `seeds/` e `db.js`
+- `utils/` para validações e tratamento de erros
+
+Isso é excelente e mostra que você entendeu a importância da organização para projetos escaláveis.
+
+---
+
+## 3. Recomendações para melhorar e corrigir os erros
+
+### Sobre o problema de email no registro de usuário
+
+Corrija a query no `usuariosRepository.js`:
 
 ```js
-try {
-    const { id } = agenteIdValido.parse(req.params);
-} catch (error) {
-    if (error instanceof z.ZodError) {
-        return next(new ApiError(400, "ID inválido"));
+async function encontrarUsuarioPorEmail(email) {
+    try {
+        const user = await db('usuarios').whereRaw('LOWER(email) = ?', [email.toLowerCase()]);
+
+        if(!user || user.length === 0) {
+            return false;
+        }
+
+        return user[0];
+    } catch (error) {
+        console.log(error);
+        return false;        
     }
-    return next(error);
-}
-```
-
-E depois:
-
-```js
-if (!dados) {
-    return next(new ApiError(404, "Agente não encontrado"));
 }
 ```
 
 ---
 
-### 4. **Status 401 ao acessar rotas sem token JWT**
+### Sobre o tratamento de erros e status codes
 
-**O que aconteceu?**
-
-Os testes esperam que todas as rotas protegidas retornem 401 Unauthorized quando o token JWT não for enviado no header Authorization.
-
-**Seu código relevante:**
-
-No middleware:
+Exemplo no `postAgente`:
 
 ```js
-const authHeader = req.headers["authorization"];
-const headerToken = authHeader && authHeader.split(" ")[1];
-const cookieToken = req.cookies?.access_token;
-
-const token = headerToken || cookieToken;
-
-if(!token){
-    return next(new ApiError(401, "Token de autenticação não fornecido."));
+if(!dados){
+    return next(new ApiError(400, "Não foi possível criar esse agente"));
 }
 ```
 
-**Análise:**
+Use status 400 para erros de requisição, 404 para recursos não encontrados, e 500 para erros internos do servidor.
 
-- Seu middleware parece correto e trata o caso.
-- Verifique se nas rotas você está realmente aplicando o middleware `authMiddleware` em todas as rotas que precisam de proteção (agentes e casos estão protegidas, ok).
-- No `server.js`, você usa:
+---
+
+### Sobre o middleware de autenticação
+
+Verifique se a variável de ambiente `JWT_SECRET` está definida corretamente no seu `.env` e no ambiente de execução. O middleware usa:
 
 ```js
-app.use(agentesRouter);
-app.use(casosRouter);
-app.use(authRouter);
+const secret = process.env.JWT_SECRET || "secret";
+const user = jwt.verify(token, secret);
 ```
 
-Se as rotas de autenticação não precisam de proteção, está certo.
-
-**Possível causa:**
-
-- Se algum teste tenta acessar rota protegida sem token e seu middleware não está sendo chamado, a rota pode responder 200, falhando o teste.
-
-**Sugestão:**
-
-Confirme que o middleware está aplicado em todas as rotas protegidas, como você já fez. Se estiver, está ok.
+Se o segredo for diferente do usado para gerar o token no login, a validação falhará.
 
 ---
 
-### 5. **Filtros e buscas (Testes bônus que falharam)**
+### Sobre validações com Zod
 
-Você teve falhas em testes bônus relacionados a:
+Certifique-se que seus schemas rejeitam campos extras e validam todos os requisitos, especialmente para:
 
-- Filtragem de casos por status.
-- Busca de agente responsável por caso.
-- Filtragem de casos por agente.
-- Busca por keywords em título e descrição.
-- Endpoint `/usuarios/me`.
-
-**Análise:**
-
-- Seu código tem esses endpoints e funções, mas os testes falharam.
-- Pode ser que o formato da resposta, os status codes ou as validações estejam divergentes do esperado.
-- Também pode ser que a lógica dos filtros não esteja cobrindo todos os casos.
-
-**Sugestão:**
-
-- Revise os controllers e repositories relacionados para garantir que:
-
-  - Retorna 404 quando não encontrar dados.
-  - Retorna 200 com array vazio quando apropriado (alguns testes podem esperar isso).
-  - Os parâmetros de consulta são validados corretamente.
-  
-- Revise o endpoint `/usuarios/me` para garantir que retorna os dados do usuário autenticado com status 200.
+- Senha: no registro, deve ter no mínimo 8 caracteres, letras maiúsculas, minúsculas, números e caracteres especiais.
+- Campos obrigatórios: nome, email, senha para usuário; nome, dataDeIncorporacao, cargo para agente; título, descrição, status, agente_id para caso.
 
 ---
 
-## Outras Observações Importantes
+## 4. Recursos recomendados para você aprimorar ainda mais seu projeto
 
-### Estrutura de Diretórios
+- Para a configuração do banco de dados com Docker e Knex:  
+  https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s  
+  https://www.youtube.com/watch?v=dXWy_aGCW1E  
+  https://www.youtube.com/watch?v=GLwHSs7t3Ns&t=4s  
+  https://www.youtube.com/watch?v=AJrK90D5el0&t=9s  
 
-Sua estrutura está conforme o esperado, parabéns! Isso ajuda muito na organização e facilita manutenção.
+- Para organização e arquitetura MVC em Node.js:  
+  https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
 
----
-
-### Uso do `.env` e JWT_SECRET
-
-Você usou `process.env.JWT_SECRET || "secret"` em vários pontos:
-
-```js
-const access_token = jwt.sign(..., process.env.JWT_SECRET || "secret", ...);
-```
-
-**Atenção:** Para produção e testes, o segredo deve vir do `.env`. Usar fallback `"secret"` pode causar falha nos testes que esperam o segredo do `.env`.
-
-**Sugestão:**
-
-- Garanta que o arquivo `.env` esteja configurado corretamente e o `JWT_SECRET` esteja definido.
-- Remova o fallback `"secret"` para forçar o uso do `.env`.
-- Isso evita que os tokens gerados não batam com o esperado nos testes.
+- Para autenticação, JWT e bcrypt:  
+  Esse vídeo, feito pelos meus criadores, fala muito bem sobre conceitos básicos e fundamentais da cibersegurança e autenticação: https://www.youtube.com/watch?v=Q4LQOfYwujk  
+  Para entender JWT na prática: https://www.youtube.com/watch?v=keS0JWOypIU  
+  Para uso de JWT e bcrypt juntos: https://www.youtube.com/watch?v=L04Ln97AwoY  
 
 ---
 
-### Validação da senha
+## 5. Resumo rápido do que focar para melhorar 🚀
 
-Você usa `zod` para validar a senha do usuário, cobrindo os requisitos (mínimo 8 caracteres, letras maiúsculas/minúsculas, números, caracteres especiais). Ótimo!
-
----
-
-### Uso do cookie para o token JWT
-
-Você está enviando o token JWT também em cookie HTTP-only:
-
-```js
-res.cookie('access_token', access_token, {
-    maxAge: 60*60*1000,
-    httpOnly: true,
-    sameSite: 'lax',
-    secure: process.env.NODE_ENV === 'production',
-    path: '/'
-})
-```
-
-Isso é legal para segurança, mas os testes parecem esperar o token no corpo JSON e no header Authorization.
-
-**Sugestão:**
-
-- Continue enviando o token no JSON (como você já faz).
-- O cookie é um bônus, mas garanta que o middleware aceite o token via header Authorization (como já implementado).
-- Se quiser, documente isso no `INSTRUCTIONS.md`.
+- Corrigir a query de busca de usuário por email para evitar problema no registro duplicado.  
+- Ajustar status codes para erros (usar 400 para payload inválido, 404 para recurso não encontrado).  
+- Validar corretamente os schemas Zod para rejeitar campos extras e garantir todos os requisitos, especialmente para senha.  
+- Garantir que a variável de ambiente `JWT_SECRET` está definida e consistente entre login e middleware.  
+- Rever a implementação dos filtros em casos e agentes para atender os testes bônus.  
+- Testar manualmente as rotas protegidas sem token para garantir retorno 401.  
+- Manter a organização do projeto, que está muito boa!  
 
 ---
 
-## Recomendações de Recursos para Você 🎓
+Gabriel, você está no caminho certo! 💪 Seu projeto já tem uma base sólida, e com esses ajustes você vai conseguir passar todos os testes e entregar uma aplicação profissional e segura. Continue praticando e explorando os conceitos de autenticação, validação e boas práticas de código. Estou aqui para te ajudar sempre que precisar! 🚀✨
 
-- Para entender melhor autenticação JWT e bcrypt, recomendo muito este vídeo, feito pelos meus criadores, que explica os conceitos básicos e práticos: https://www.youtube.com/watch?v=Q4LQOfYwujk  
-- Para aprofundar no uso de JWT na prática, veja este vídeo: https://www.youtube.com/watch?v=keS0JWOypIU  
-- Para entender melhor a integração do bcrypt com JWT, este vídeo é excelente: https://www.youtube.com/watch?v=L04Ln97AwoY  
-- Se quiser revisar a estrutura do projeto e boas práticas MVC em Node.js, este vídeo vai te ajudar bastante: https://www.youtube.com/watch?v=bGN_xNc4A1k&t=3s  
-- Caso tenha dúvidas sobre configuração do banco com Docker e Knex, recomendo: https://www.youtube.com/watch?v=uEABDBQV-Ek&t=1s e a documentação oficial do Knex.js.
-
----
-
-## Resumo dos Pontos para Focar 🔑
-
-- Corrigir o status code para IDs inválidos (use 400, não 404).
-- Garantir que o email já existente retorne 400 com mensagem correta.
-- Confirmar que o formato da data em agentes está exatamente como o teste espera.
-- Remover fallback do JWT_SECRET para evitar tokens inconsistentes.
-- Revisar os endpoints de filtros e buscas para garantir status codes e respostas conforme esperado.
-- Confirmar que o middleware de autenticação está aplicado em todas as rotas protegidas.
-- Documentar claramente no INSTRUCTIONS.md o uso do token JWT no header Authorization.
-- Testar localmente com ferramentas como Postman para garantir que as respostas e status codes batem com os testes automatizados.
-
----
-
-Gabriel, seu projeto está muito bem encaminhado e você já domina muitos conceitos avançados! Com esses ajustes finos, sua aplicação vai ficar sólida, segura e alinhada com as expectativas do desafio. Continue praticando, revisando os detalhes e testando cada funcionalidade com atenção.
-
-Se precisar de ajuda para entender melhor algum ponto específico, estou aqui para te ajudar! 🚀💪
-
-Um grande abraço e sucesso na jornada! 👊✨
+Um grande abraço e sucesso! 👊😄
 
 > Caso queira tirar uma dúvida específica, entre em contato com o Chapter no nosso [discord](https://discord.gg/DryuHVnz).
 
