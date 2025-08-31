@@ -9,8 +9,8 @@ const agentesRouter = require('./routes/agentesRoutes');
 const casosRouter = require('./routes/casosRoutes');
 const authRouter = require('./routes/authRoutes');
 
-app.use(express.json());
 app.use(cookieParser());
+app.use(express.json());
 
 app.use(agentesRouter);
 app.use(casosRouter);

@@ -46,7 +46,7 @@ async function login(req, res, next) {
             return next(new ApiError(401, "Dados errados."));
         }
 
-        const access_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET || 'secret', {
+        const access_token = jwt.sign({id: user.id, nome: user.nome, email: user.email}, process.env.JWT_SECRET || "secret", {
             expiresIn: '1d'
         })
 
