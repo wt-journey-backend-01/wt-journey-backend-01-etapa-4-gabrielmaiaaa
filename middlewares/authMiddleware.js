@@ -1,7 +1,7 @@
 const jwt = require('jsonwebtoken');
 const { ApiError } = require("../utils/errorHandler");
 
-async function authMiddleware(req, res, next) {
+function authMiddleware(req, res, next) {
     try {
         console.log('🔍 MIDDLEWARE ACIONADO para rota:', req.path);
         
@@ -45,4 +45,19 @@ async function authMiddleware(req, res, next) {
     }
 }
 
-module.exports = authMiddleware;
+function debugMiddleware(req, res, next) {
+  console.log('=== 🕵️‍♂️ DEBUG REQUEST ===');
+  console.log('URL:', req.url);
+  console.log('METHOD:', req.method);
+  console.log('HEADERS:', req.headers);
+  console.log('COOKIES:', req.cookies);
+  console.log('QUERY PARAMS:', req.query);
+  console.log('BODY:', req.body);
+  console.log('=== FIM DEBUG ===');
+  next(); 
+}
+
+module.exports = {
+  authMiddleware,
+  debugMiddleware
+};
