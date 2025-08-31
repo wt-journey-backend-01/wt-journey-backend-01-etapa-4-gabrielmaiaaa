@@ -40,6 +40,11 @@ async function getAllAgentes(req, res, next) {
         const { cargo, sort } = agenteCargoESorteValido.parse(req.query);       
 
         if (cargo) {
+        
+            if (!req.user) {
+                return next(new ApiError(401, "Token de autenticação não fornecido."));
+            }
+            
             const dados = await agentesRepository.listarAgentesPorCargo(cargo);
             
             if(!dados){
@@ -50,6 +55,11 @@ async function getAllAgentes(req, res, next) {
         }
 
         if (sort) {
+        
+            if (!req.user) {
+                return next(new ApiError(401, "Token de autenticação não fornecido."));
+            }
+
             const dados = await agentesRepository.listarDataDeIncorporacao(sort)
 
             if (!dados || dados.length === 0) {
@@ -77,6 +87,10 @@ async function getAllAgentes(req, res, next) {
 async function getAgente(req, res, next) {
     try {        
         const { id } = agenteIdValido.parse(req.params);
+
+        if (!req.user) {
+            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        }
         
         const dados = await agentesRepository.encontrarAgenteById(id);
 
@@ -95,7 +109,11 @@ async function getAgente(req, res, next) {
 
 async function postAgente(req, res, next) {
     try {
-        const { nome, dataDeIncorporacao, cargo } = dadosAgentes.parse(req.body);        
+        const { nome, dataDeIncorporacao, cargo } = dadosAgentes.parse(req.body);    
+        
+        if (!req.user) {
+            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        }    
 
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new ApiError(400, "Data de Incorporação inválida ou no futuro ou com mais de 120 anos."));
@@ -130,6 +148,10 @@ async function putAgente(req, res, next) {
         }
 
         const { nome, dataDeIncorporacao, cargo } = dadosAgentes.parse(req.body);
+        
+        if (!req.user) {
+            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        }
 
         if (!isValidDate(dataDeIncorporacao)) {
             return next(new ApiError(400, "Data de Incorporação inválida ou no futuro ou com mais de 120 anos."));
@@ -165,6 +187,10 @@ async function patchAgente(req, res, next) {
 
         const { nome, dataDeIncorporacao, cargo } = dadosParcialAgentes.parse(req.body);
         
+        if (!req.user) {
+            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        }
+        
         if (dataDeIncorporacao && !isValidDate(dataDeIncorporacao)) {
             return next(new ApiError(400, "Data de Incorporação inválida ou no futuro ou com mais de 120 anos."));
         }
@@ -188,6 +214,10 @@ async function patchAgente(req, res, next) {
 async function deleteAgente(req, res, next) {
     try {
         const { id } = agenteIdValido.parse(req.params);
+        
+        if (!req.user) {
+            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        }
 
         const status = await agentesRepository.apagarAgente(id);
 
@@ -207,6 +237,10 @@ async function deleteAgente(req, res, next) {
 async function getCasosDoAgente(req, res, next) {
     try {
         const { id } = agenteIdValido.parse(req.params);
+        
+        if (!req.user) {
+            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        }
 
         if (!await agentesRepository.encontrarAgenteById(id)) {
             return next(new ApiError(404, "Agente não foi encontrado com esse id."));

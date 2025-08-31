@@ -3,37 +3,41 @@ const { ApiError } = require("../utils/errorHandler");
 
 function authMiddleware(req, res, next) {
     try {
-        console.log('🔍 MIDDLEWARE ACIONADO para rota:', req.path);
+        // console.log('🔍 MIDDLEWARE ACIONADO para rota:', req.path);
         
         const authHeader = req.headers["authorization"];
         const headerToken = authHeader && authHeader.split(" ")[1];
         const cookieToken = req.cookies?.access_token;
 
-        console.log('📨 Header Authorization:', authHeader);
-        console.log('🔑 Token do Header:', headerToken);
-        console.log('🍪 Token do Cookie:', cookieToken);
+        // console.log('📨 Header Authorization:', authHeader);
+        // console.log('🔑 Token do Header:', headerToken);
+        // console.log('🍪 Token do Cookie:', cookieToken);
 
         const token = headerToken || cookieToken;
 
-        if(!token){
-            console.log('❌ NENHUM TOKEN ENCONTRADO');
-            return next(new ApiError(401, "Token de autenticação não fornecido."));
+        // if(!token){
+        //     // console.log('❌ NENHUM TOKEN ENCONTRADO');
+        //     return next(new ApiError(401, "Token de autenticação não fornecido."));
+        // }
+        if (!token) {
+            req.user = null; 
+            return next(); 
         }
 
-        console.log('✅ Token encontrado:', token.substring(0, 20) + '...');
+        // console.log('✅ Token encontrado:', token.substring(0, 20) + '...');
         
         // Verifica se JWT_SECRET está definido
         const secret = process.env.JWT_SECRET || "secret";
-        console.log('🔐 Secret sendo usado:', secret ? 'DEFINIDO' : 'NÃO DEFINIDO');
+        // console.log('🔐 Secret sendo usado:', secret ? 'DEFINIDO' : 'NÃO DEFINIDO');
 
         const user = jwt.verify(token, secret);
-        console.log('👤 Usuário decodificado:', user);
+        // console.log('👤 Usuário decodificado:', user);
 
         req.user = user;
         next();
     } catch (error) {
-        console.log('💥 ERRO NO MIDDLEWARE:', error.message);
-        console.log('💥 Tipo do erro:', error.name);
+        // console.log('💥 ERRO NO MIDDLEWARE:', error.message);
+        // console.log('💥 Tipo do erro:', error.name);
         
         if (error.name === 'TokenExpiredError') {
             return next(new ApiError(401, "Token expirado."));
@@ -46,14 +50,14 @@ function authMiddleware(req, res, next) {
 }
 
 function debugMiddleware(req, res, next) {
-  console.log('=== 🕵️‍♂️ DEBUG REQUEST ===');
-  console.log('URL:', req.url);
-  console.log('METHOD:', req.method);
-  console.log('HEADERS:', req.headers);
-  console.log('COOKIES:', req.cookies);
-  console.log('QUERY PARAMS:', req.query);
-  console.log('BODY:', req.body);
-  console.log('=== FIM DEBUG ===');
+//   console.log('=== 🕵️‍♂️ DEBUG REQUEST ===');
+//   console.log('URL:', req.url);
+//   console.log('METHOD:', req.method);
+//   console.log('HEADERS:', req.headers);
+//   console.log('COOKIES:', req.cookies);
+//   console.log('QUERY PARAMS:', req.query);
+//   console.log('BODY:', req.body);
+//   console.log('=== FIM DEBUG ===');
   next(); 
 }
 
