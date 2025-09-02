@@ -49,7 +49,7 @@ async function login(req, res, next) {
         const secret = process.env.JWT_SECRET || "segredo";
 
         const access_token = jwt.sign({nome: user.nome, email: user.email}, secret, {
-            expiresIn: '1d'
+            expiresIn: '1h'
         })
 
         res.cookie('access_token', access_token, {
@@ -59,7 +59,6 @@ async function login(req, res, next) {
             secure: process.env.NODE_ENV === 'production',
             path: '/'
         })
-        console.log('TOKEN GERADO:', access_token); 
 
         res.status(200).json({access_token});        
     } catch (error) {
